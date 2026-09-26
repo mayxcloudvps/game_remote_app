@@ -6,7 +6,9 @@ on:
   workflow_dispatch:
 
 jobs:
-  # Job 1: Build App Client (.apk) cho Android
+  # ==========================================
+  # JOB 1: BUILD ANDROID CLIENT (.APK)
+  # ==========================================
   build-apk:
     name: Build Android Client APK
     runs-on: ubuntu-latest
@@ -37,13 +39,51 @@ jobs:
       - name: Build APK
         run: flutter build apk --release
 
-      - name: Upload APK
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: MayxCloudGaming-Android-Client
           path: build/app/outputs/flutter-apk/app-release.apk
 
-  # Job 2: Build Server Windows Setup (.exe) cho PC
+  # ==========================================
+  # JOB 2: BUILD WINDOWS CLIENT (.EXE)
+  # ==========================================
+  build-windows-client:
+    name: Build Windows Client EXE
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Enable Windows Desktop
+        run: flutter config --enable-windows-desktop
+
+      - name: Generate Windows Shell if missing
+        run: |
+          if (-not (Test-Path "windows")) {
+            flutter create dummy_app --platforms=windows --org com.mayx.cloudgaming --project-name mayxcloud_gaming
+            Copy-Item -Path "dummy_app\windows" -Destination "." -Recurse -Force
+            Remove-Item -Path "dummy_app" -Recurse -Force
+          }
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Build Windows Client
+        run: flutter build windows --release
+
+      - name: Upload Windows Client Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MayxCloudGaming-Windows-Client
+          path: build/windows/runner/Release/
+
+  # ==========================================
+  # JOB 3: BUILD WINDOWS SERVER SETUP (.EXE)
+  # ==========================================
   build-server-exe:
     name: Build Windows Server Setup
     runs-on: windows-latest
