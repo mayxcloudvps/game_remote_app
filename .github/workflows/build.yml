@@ -1,85 +1,3 @@
-name: Build Mayx Cloud Gaming App & Server
-
-on:
-  push:
-    branches: [ "main", "master" ]
-  workflow_dispatch:
-
-jobs:
-  # ==========================================
-  # JOB 1: BUILD ANDROID CLIENT (.APK)
-  # ==========================================
-  build-apk:
-    name: Build Android Client APK
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
-
-      - name: Create Android Folder if missing
-        run: |
-          if [ ! -d "android" ]; then
-            flutter create . --platforms=android --org com.mayx.cloudgaming
-          fi
-
-      - name: Get dependencies
-        run: flutter pub get
-
-      - name: Build APK
-        run: flutter build apk --release
-
-      - name: Upload APK Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: MayxCloudGaming-Android-Client
-          path: build/app/outputs/flutter-apk/app-release.apk
-
-  # ==========================================
-  # JOB 2: BUILD WINDOWS CLIENT (.EXE)
-  # ==========================================
-  build-windows-client:
-    name: Build Windows Client EXE
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
-
-      - name: Enable Windows & Create Folder if missing
-        run: |
-          flutter config --enable-windows-desktop
-          if (-not (Test-Path "windows")) {
-            flutter create . --platforms=windows --org com.mayx.cloudgaming
-          }
-
-      - name: Get dependencies
-        run: flutter pub get
-
-      - name: Build Windows Client
-        run: flutter build windows --release
-
-      - name: Zip Windows Client Release
-        shell: powershell
-        run: |
-          Compress-Archive -Path "build\windows\x64\runner\Release\*" -DestinationPath "MayxCloudGaming-Windows-Client.zip" -Force
-
-      - name: Upload Windows Client Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: MayxCloudGaming-Windows-Client
-          path: MayxCloudGaming-Windows-Client.zip
-
   # ==========================================
   # JOB 3: BUILD WINDOWS SERVER SETUP (.EXE)
   # ==========================================
@@ -125,10 +43,13 @@ jobs:
         run: |
           pyinstaller --noconfirm --onedir --windowed --icon=app_icon.ico --collect-all customtkinter --name "MayxServer" server.py
 
-      - name: Build Installer Package with Inno Setup Action
-        uses: fuerza/inno-setup-action@v1
-        with:
-          filepath: setup_script.iss
+      # Cài đặt Inno Setup bằng Action chính chủ chuẩn 100%
+      - name: Setup Inno Setup
+        uses: minyami/setup-inno-setup@v1
+
+      - name: Compile Installer with Inno Setup
+        run: |
+          iscc setup_script.iss
 
       - name: Upload Windows Server Setup
         uses: actions/upload-artifact@v4
