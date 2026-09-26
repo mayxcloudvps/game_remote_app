@@ -1,4 +1,4 @@
-name: Build MayxCloud Gaming App
+name: Build Mayx Cloud Gaming App
 
 on:
   push:
@@ -22,10 +22,13 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Create Flutter project structure if missing
+      - name: Setup Flutter Project
         run: |
           if [ ! -d "android" ]; then
-            flutter create . --platforms=android,windows --org com.mayx.cloudgaming --project-name mayx_cloud_gaming
+            flutter create --platforms=android,windows --org com.mayx.cloudgaming mayx_app
+            cp -r mayx_app/android .
+            cp -r mayx_app/windows .
+            rm -rf mayx_app
           fi
 
       - name: Get dependencies
@@ -53,10 +56,12 @@ jobs:
       - name: Enable Windows Desktop
         run: flutter config --enable-windows-desktop
 
-      - name: Create Windows project structure if missing
+      - name: Setup Windows Project
         run: |
           if (-not (Test-Path "windows")) {
-            flutter create . --platforms=windows --org com.mayx.cloudgaming --project-name mayx_cloud_gaming
+            flutter create --platforms=windows --org com.mayx.cloudgaming mayx_app
+            Copy-Item -Path "mayx_app\windows" -Destination "." -Recurse -Force
+            Remove-Item -Path "mayx_app" -Recurse -Force
           }
 
       - name: Get dependencies
