@@ -25,12 +25,10 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Generate Android Project Shell if missing
+      - name: Create Android Folder if missing
         run: |
           if [ ! -d "android" ]; then
-            flutter create dummy_app --platforms=android --org com.mayx.cloudgaming --project-name mayxcloud_gaming
-            cp -r dummy_app/android .
-            rm -rf dummy_app
+            flutter create . --platforms=android --org com.mayx.cloudgaming
           fi
 
       - name: Get dependencies
@@ -58,15 +56,11 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Enable Windows Desktop
-        run: flutter config --enable-windows-desktop
-
-      - name: Generate Windows Shell if missing
+      - name: Enable Windows & Create Folder if missing
         run: |
+          flutter config --enable-windows-desktop
           if (-not (Test-Path "windows")) {
-            flutter create dummy_app --platforms=windows --org com.mayx.cloudgaming --project-name mayxcloud_gaming
-            Copy-Item -Path "dummy_app\windows" -Destination "." -Recurse -Force
-            Remove-Item -Path "dummy_app" -Recurse -Force
+            flutter create . --platforms=windows --org com.mayx.cloudgaming
           }
 
       - name: Get dependencies
@@ -75,11 +69,16 @@ jobs:
       - name: Build Windows Client
         run: flutter build windows --release
 
+      - name: Zip Windows Client Release
+        shell: powershell
+        run: |
+          Compress-Archive -Path "build\windows\x64\runner\Release\*" -DestinationPath "MayxCloudGaming-Windows-Client.zip" -Force
+
       - name: Upload Windows Client Artifact
         uses: actions/upload-artifact@v4
         with:
           name: MayxCloudGaming-Windows-Client
-          path: build/windows/runner/Release/
+          path: MayxCloudGaming-Windows-Client.zip
 
   # ==========================================
   # JOB 3: BUILD WINDOWS SERVER SETUP (.EXE)
@@ -126,12 +125,10 @@ jobs:
         run: |
           pyinstaller --noconfirm --onedir --windowed --icon=app_icon.ico --collect-all customtkinter --name "MayxServer" server.py
 
-      - name: Install Inno Setup
-        run: choco install innosetup -y
-
-      - name: Build Installer Package with Inno Setup
-        run: |
-          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" setup_script.iss
+      - name: Build Installer Package with Inno Setup Action
+        uses: fuerza/inno-setup-action@v1
+        with:
+          filepath: setup_script.iss
 
       - name: Upload Windows Server Setup
         uses: actions/upload-artifact@v4
