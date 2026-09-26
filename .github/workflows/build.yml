@@ -94,10 +94,10 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Install Python Dependencies (WebRTC & Audio Support)
+      - name: Install Python Dependencies (Sounddevice FIX - Fast Build)
         run: |
           python -m pip install --upgrade pip
-          pip install pyinstaller mss pillow pynput vgamepad customtkinter aiortc av pyaudio
+          pip install pyinstaller mss pillow pynput vgamepad customtkinter aiortc av sounddevice numpy
 
       - name: Create Default App Icon PNG if Missing
         shell: powershell
