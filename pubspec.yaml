@@ -1,6 +1,5 @@
 name: mayxcloud_gaming
-description: App Chơi Game Mới Của Bạn
-
+description: App Remote Game MÂYX CLOUD GAMING
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -12,5 +11,18 @@ dependencies:
     sdk: flutter
   flutter_joystick: ^0.2.1
 
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_launcher_icons: "^0.13.1" # Thư viện tự động tạo Icon
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/app_icon.png"
+  min_sdk_android: 21
+
 flutter:
   uses-material-design: true
+  assets:
+    - assets/app_icon.png
