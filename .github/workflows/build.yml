@@ -15,22 +15,26 @@ jobs:
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'
+          distribution: 'temurin'
           java-version: '17'
 
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
 
-      - run: |
+      - name: Create Flutter project structure if missing
+        run: |
           if [ ! -d "android" ]; then
-            flutter create . --platforms=android,windows
+            flutter create . --platforms=android,windows --org com.mayx.cloudgaming --app-name mayx_cloud_gaming
           fi
 
-      - run: flutter pub get
-      - run: flutter build apk --release
+      - name: Get dependencies
+        run: flutter pub get
 
-      - name: Upload APK Artifact
+      - name: Build APK
+        run: flutter build apk --release
+
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: MayxCloudGaming-Android
@@ -46,15 +50,22 @@ jobs:
         with:
           channel: 'stable'
 
-      - run: flutter config --enable-windows-desktop
-      - run: |
-          if (-not (Test-Path "windows")) {
-            flutter create . --platforms=windows
-          }
-      - run: flutter pub get
-      - run: flutter build windows --release
+      - name: Enable Windows Desktop
+        run: flutter config --enable-windows-desktop
 
-      - name: Upload EXE Artifact
+      - name: Create Windows project structure if missing
+        run: |
+          if (-not (Test-Path "windows")) {
+            flutter create . --platforms=windows --org com.mayx.cloudgaming --app-name mayx_cloud_gaming
+          }
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Build Windows
+        run: flutter build windows --release
+
+      - name: Upload EXE
         uses: actions/upload-artifact@v4
         with:
           name: MayxCloudGaming-Windows
