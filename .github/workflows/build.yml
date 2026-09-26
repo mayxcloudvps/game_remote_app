@@ -58,7 +58,7 @@ jobs:
       - name: Install Python Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pyinstaller mss pillow pynput vgamepad
+          pip install pyinstaller mss pillow pynput vgamepad customtkinter
 
       - name: Convert App Icon PNG to ICO
         shell: powershell
@@ -67,7 +67,7 @@ jobs:
 
       - name: Build EXE with PyInstaller
         run: |
-          pyinstaller --noconfirm --onedir --windowed --icon=app_icon.ico --name "MayxServer" server.py
+          pyinstaller --noconfirm --onedir --windowed --icon=app_icon.ico --collect-all customtkinter --name "MayxServer" server.py
 
       - name: Install Inno Setup
         run: choco install innosetup -y
