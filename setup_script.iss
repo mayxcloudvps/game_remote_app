@@ -11,11 +11,11 @@ OutputBaseFilename=MayxCloudGaming_Server_Setup
 SetupIconFile=app_icon.ico
 
 [Files]
-Source: "dist\MayxServer.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "dist\MayxServer\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{group}\MAYX CLOUD GAMING Server"; Filename: "{app}\MayxServer.exe"
 Name: "{autodesktop}\MAYX CLOUD GAMING Server"; Filename: "{app}\MayxServer.exe"
 
 [Run]
-Filename: "{app}\MayxServer.exe"; Description: "Chạy MAYX CLOUD GAMING Server ngay"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\MayxServer.exe"; Description: "Khởi chạy MÂYX CLOUD GAMING Server"; Flags: nowait postinstall skipifsilent
