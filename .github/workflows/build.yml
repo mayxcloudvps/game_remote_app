@@ -1,4 +1,4 @@
-name: Build Mayx Cloud Gaming App
+name: Build Mayx Cloud Gaming App & Server
 
 on:
   push:
@@ -6,8 +6,9 @@ on:
   workflow_dispatch:
 
 jobs:
+  # Job 1: Build App Client (.apk) cho Android
   build-apk:
-    name: Build Android APK
+    name: Build Android Client APK
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,11 +23,16 @@ jobs:
         with:
           channel: 'stable'
 
+      - name: Generate Android Project Shell if missing
+        run: |
+          if [ ! -d "android" ]; then
+            flutter create dummy_app --platforms=android --org com.mayx.cloudgaming --project-name mayxcloud_gaming
+            cp -r dummy_app/android .
+            rm -rf dummy_app
+          fi
+
       - name: Get dependencies
         run: flutter pub get
-
-      - name: Generate App Launcher Icons
-        run: dart run flutter_launcher_icons
 
       - name: Build APK
         run: flutter build apk --release
@@ -34,33 +40,44 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: MayxCloudGaming-Android
+          name: MayxCloudGaming-Android-Client
           path: build/app/outputs/flutter-apk/app-release.apk
 
-  build-exe:
-    name: Build Windows EXE
+  # Job 2: Build Server Windows Setup (.exe) cho PC
+  build-server-exe:
+    name: Build Windows Server Setup
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
 
-      - uses: subosito/flutter-action@v2
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          channel: 'stable'
+          python-version: '3.10'
 
-      - name: Enable Windows Desktop
-        run: flutter config --enable-windows-desktop
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller mss pillow pynput vgamepad
 
-      - name: Get dependencies
-        run: flutter pub get
+      - name: Convert App Icon PNG to ICO
+        shell: powershell
+        run: |
+          python -c "from PIL import Image; img = Image.open('app_icon.png'); img.save('app_icon.ico', format='ICO', sizes=[(256, 256)])"
 
-      - name: Generate App Launcher Icons
-        run: dart run flutter_launcher_icons
+      - name: Build EXE with PyInstaller
+        run: |
+          pyinstaller --noconfirm --onedir --windowed --icon=app_icon.ico --name "MayxServer" server.py
 
-      - name: Build Windows
-        run: flutter build windows --release
+      - name: Install Inno Setup
+        run: choco install innosetup -y
 
-      - name: Upload EXE
+      - name: Build Installer Package with Inno Setup
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" setup_script.iss
+
+      - name: Upload Windows Server Setup
         uses: actions/upload-artifact@v4
         with:
-          name: MayxCloudGaming-Windows
-          path: build/windows/runner/Release/
+          name: MayxCloudGaming-Windows-Server-Setup
+          path: Output/MayxCloudGaming_Server_Setup.exe
