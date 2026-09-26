@@ -25,11 +25,9 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Create Android Folder if missing
+      - name: Ensure Android Platform Exists
         run: |
-          if [ ! -d "android" ]; then
-            flutter create . --platforms=android --org com.mayx.cloudgaming
-          fi
+          flutter create . --platforms=android --org com.mayx.cloudgaming || true
 
       - name: Get dependencies
         run: flutter pub get
@@ -56,12 +54,10 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Enable Windows & Create Folder if missing
+      - name: Ensure Windows Platform Exists
         run: |
           flutter config --enable-windows-desktop
-          if (-not (Test-Path "windows")) {
-            flutter create . --platforms=windows --org com.mayx.cloudgaming
-          }
+          flutter create . --platforms=windows --org com.mayx.cloudgaming
 
       - name: Get dependencies
         run: flutter pub get
@@ -94,7 +90,7 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Install Python Dependencies (Sounddevice FIX - Fast Build)
+      - name: Install Python Dependencies
         run: |
           python -m pip install --upgrade pip
           pip install pyinstaller mss pillow pynput vgamepad customtkinter aiortc av sounddevice numpy
