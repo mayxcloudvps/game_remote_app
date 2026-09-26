@@ -1,5 +1,5 @@
-name: game_remote_app
-description: Game Remote Client
+name: mayxcloud gaming
+description: App Chơi Game Mới Của Bạn
 
 publish_to: 'none'
 version: 1.0.0+1
@@ -10,13 +10,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  web_socket_channel: ^2.4.0
   flutter_joystick: ^0.2.1
-
-dev_dependencies:
-  flutter_test:
-    sdk: flutter
 
 flutter:
   uses-material-design: true
-  
