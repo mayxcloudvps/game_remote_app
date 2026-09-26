@@ -84,7 +84,7 @@ jobs:
   build-server-exe:
     name: Build Windows Server Setup
     runs-on: windows-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -120,9 +120,9 @@ jobs:
         run: |
           python -c "from PIL import Image; img = Image.open('app_icon.png'); img.save('app_icon.ico', format='ICO', sizes=[(256, 256)])"
 
-      - name: Build EXE with PyInstaller
+      - name: Build EXE Fast with PyInstaller
         run: |
-          pyinstaller --noconfirm --onedir --windowed --icon=app_icon.ico --collect-all customtkinter --name "MayxServer" server.py
+          pyinstaller --noconfirm --onedir --windowed --icon=app_icon.ico --collect-data customtkinter --name "MayxServer" server.py
 
       - name: Download & Install Inno Setup
         shell: powershell
