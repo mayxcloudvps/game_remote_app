@@ -1,4 +1,4 @@
-name: Build Android APK & Windows EXE
+name: Build Mayx Cloud Gaming App
 
 on:
   push:
@@ -7,6 +7,7 @@ on:
 
 jobs:
   build-apk:
+    name: Build Android APK
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -29,12 +30,14 @@ jobs:
       - run: flutter pub get
       - run: flutter build apk --release
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
         with:
-          name: android-apk
+          name: MayxCloudGaming-Android
           path: build/app/outputs/flutter-apk/app-release.apk
 
   build-exe:
+    name: Build Windows EXE
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -51,7 +54,8 @@ jobs:
       - run: flutter pub get
       - run: flutter build windows --release
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload EXE Artifact
+        uses: actions/upload-artifact@v4
         with:
-          name: windows-exe
+          name: MayxCloudGaming-Windows
           path: build/windows/runner/Release/
