@@ -94,10 +94,10 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Install Python Dependencies
+      - name: Install Python Dependencies (WebRTC & Audio Support)
         run: |
           python -m pip install --upgrade pip
-          pip install pyinstaller mss pillow pynput vgamepad customtkinter
+          pip install pyinstaller mss pillow pynput vgamepad customtkinter aiortc av pyaudio
 
       - name: Create Default App Icon PNG if Missing
         shell: powershell
