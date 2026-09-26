@@ -12,6 +12,7 @@ jobs:
   build-apk:
     name: Build Android Client APK
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -25,9 +26,9 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Ensure Android Platform Exists
+      - name: Re-create Android Platform Files
         run: |
-          flutter create . --platforms=android --org com.mayx.cloudgaming || true
+          flutter create . --platforms=android --org com.mayx.cloudgaming --overwrite
 
       - name: Get dependencies
         run: flutter pub get
@@ -47,6 +48,7 @@ jobs:
   build-windows-client:
     name: Build Windows Client EXE
     runs-on: windows-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -54,10 +56,10 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Ensure Windows Platform Exists
+      - name: Re-create Windows Platform Files
         run: |
           flutter config --enable-windows-desktop
-          flutter create . --platforms=windows --org com.mayx.cloudgaming
+          flutter create . --platforms=windows --org com.mayx.cloudgaming --overwrite
 
       - name: Get dependencies
         run: flutter pub get
@@ -82,6 +84,7 @@ jobs:
   build-server-exe:
     name: Build Windows Server Setup
     runs-on: windows-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -95,7 +98,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install pyinstaller mss pillow pynput vgamepad customtkinter aiortc av sounddevice numpy
 
-      - name: Create Default App Icon PNG if Missing
+      - name: Create App Icon PNG if Missing
         shell: powershell
         run: |
           python -c "
@@ -121,11 +124,12 @@ jobs:
         run: |
           pyinstaller --noconfirm --onedir --windowed --icon=app_icon.ico --collect-all customtkinter --name "MayxServer" server.py
 
-      - name: Download & Install Inno Setup Directly
+      - name: Download & Install Inno Setup
         shell: powershell
         run: |
-          Invoke-WebRequest -Uri "https://jrsoftware.org/download.php/is.exe" -OutFile "inno_setup.exe"
-          Start-Process -FilePath "inno_setup.exe" -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP-" -Wait
+          [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+          Invoke-WebRequest -Uri "https://jrsoftware.org/download.php/is.exe" -OutFile "inno_installer.exe"
+          Start-Process -FilePath ".\inno_installer.exe" -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/SP-" -NoNewWindow -Wait
 
       - name: Compile Installer with Inno Setup
         shell: powershell
