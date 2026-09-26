@@ -3,9 +3,9 @@ import 'package:flutter/services.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  // Ẩn thanh điều hướng và thanh trạng thái để tối ưu không gian hiển thị Stream Game
+  // Fullscreen ẩn thanh điều hướng
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-  // Khóa màn hình xoay ngang (Landscape) cho trải nghiệm Cloud Gaming
+  // Khóa màn hình xoay ngang
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.landscapeLeft,
     DeviceOrientation.landscapeRight,
@@ -41,29 +41,53 @@ class StreamViewerScreen extends StatefulWidget {
 class _StreamViewerScreenState extends State<StreamViewerScreen> {
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
         child: Center(
-          // Hiển thị khung Stream Game sạch sẽ, không phím ảo, không control overlay
-          child: AspectRatio(
-            aspectRatio: 16 / 9,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: Colors.black,
-              ),
-              child: Center(
-                child: Text(
-                  'MÂYX CLOUD GAMING - STREAM VIEW',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 1.2,
-                  ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Icon MÂYX CLOUD nổi bật ở giữa màn hình chờ
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0F172A),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: const Color(0xFF06B6D4), width: 3),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF06B6D4).withOpacity(0.3),
+                      blurRadius: 20,
+                      spreadRadius: 5,
+                    )
+                  ],
+                ),
+                child: const Icon(
+                  Icons.cloud_queue,
+                  size: 64,
+                  color: Color(0xFF0EA5E9),
                 ),
               ),
-            ),
+              const SizedBox(height: 20),
+              const Text(
+                'MÂYX CLOUD GAMING',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 2.0,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Đang kết nối tới Server...',
+                style: TextStyle(
+                  color: Colors.white54,
+                  fontSize: 13,
+                ),
+              ),
+            ],
           ),
         ),
       ),
