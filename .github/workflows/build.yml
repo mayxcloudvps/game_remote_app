@@ -1,4 +1,4 @@
-name: Build Mayx Cloud Gaming App
+name: Build MayxCloud Gaming App
 
 on:
   push:
@@ -25,7 +25,7 @@ jobs:
       - name: Create Flutter project structure if missing
         run: |
           if [ ! -d "android" ]; then
-            flutter create . --platforms=android,windows --org com.mayx.cloudgaming --app-name mayx_cloud_gaming
+            flutter create . --platforms=android,windows --org com.mayx.cloudgaming --project-name mayx_cloud_gaming
           fi
 
       - name: Get dependencies
@@ -56,7 +56,7 @@ jobs:
       - name: Create Windows project structure if missing
         run: |
           if (-not (Test-Path "windows")) {
-            flutter create . --platforms=windows --org com.mayx.cloudgaming --app-name mayx_cloud_gaming
+            flutter create . --platforms=windows --org com.mayx.cloudgaming --project-name mayx_cloud_gaming
           }
 
       - name: Get dependencies
