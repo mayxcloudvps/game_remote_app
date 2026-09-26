@@ -22,17 +22,11 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Setup Flutter Project
-        run: |
-          if [ ! -d "android" ]; then
-            flutter create --platforms=android,windows --org com.mayx.cloudgaming mayx_app
-            cp -r mayx_app/android .
-            cp -r mayx_app/windows .
-            rm -rf mayx_app
-          fi
-
       - name: Get dependencies
         run: flutter pub get
+
+      - name: Generate App Launcher Icons
+        run: dart run flutter_launcher_icons
 
       - name: Build APK
         run: flutter build apk --release
@@ -56,16 +50,11 @@ jobs:
       - name: Enable Windows Desktop
         run: flutter config --enable-windows-desktop
 
-      - name: Setup Windows Project
-        run: |
-          if (-not (Test-Path "windows")) {
-            flutter create --platforms=windows --org com.mayx.cloudgaming mayx_app
-            Copy-Item -Path "mayx_app\windows" -Destination "." -Recurse -Force
-            Remove-Item -Path "mayx_app" -Recurse -Force
-          }
-
       - name: Get dependencies
         run: flutter pub get
+
+      - name: Generate App Launcher Icons
+        run: dart run flutter_launcher_icons
 
       - name: Build Windows
         run: flutter build windows --release
