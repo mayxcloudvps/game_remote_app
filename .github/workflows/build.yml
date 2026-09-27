@@ -95,8 +95,8 @@ jobs:
 
       - name: Install Python Dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install pyinstaller mss pillow pynput vgamepad customtkinter aiortc av sounddevice numpy
+          python -m pip install --upgrade pip setuptools wheel
+          pip install --prefer-binary pyinstaller mss pillow pynput vgamepad customtkinter aiortc av sounddevice numpy
 
       - name: Create App Icon PNG if Missing
         shell: powershell
