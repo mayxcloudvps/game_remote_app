@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Java
+      - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
@@ -29,7 +29,7 @@ jobs:
       - name: Generate Android Platform Files
         run: flutter create --platforms=android .
 
-      - name: Override build.gradle for Android SDK 34
+      - name: Override build.gradle (Fix SDK 35 & Java 17)
         run: |
           cat << 'EOF' > android/app/build.gradle
           plugins {
@@ -40,14 +40,23 @@ jobs:
 
           android {
               namespace "com.mayx.cloudgaming"
-              compileSdk 34
+              compileSdk 35
 
               defaultConfig {
                   applicationId "com.mayx.cloudgaming"
                   minSdk 21
-                  targetSdk 34
+                  targetSdk 35
                   versionCode 1
                   versionName "1.0.0"
+              }
+
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_17
+                  targetCompatibility JavaVersion.VERSION_17
+              }
+
+              kotlinOptions {
+                  jvmTarget = "17"
               }
 
               buildTypes {
