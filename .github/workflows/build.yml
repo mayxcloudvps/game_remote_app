@@ -26,19 +26,19 @@ jobs:
         with:
           channel: 'stable'
 
-      # Tạo lại thư mục Android chuẩn V2
+      # Tạo lại project Android chuẩn
       - name: Re-create Android Project with V2 Embedding
         run: |
           rm -rf android
           flutter create --platforms=android --org com.mayx .
 
-      # Ép compileSdkVersion và targetSdkVersion lên 35 trong build.gradle & local.properties
+      # Ép compileSdk và targetSdk lên 35 trong cả build.gradle lẫn build.gradle.kts
       - name: Force SDK 35 in Android Gradle
         run: |
-          sed -i 's/compileSdkVersion.*/compileSdkVersion = 35/g' android/app/build.gradle
-          sed -i 's/targetSdkVersion.*/targetSdkVersion = 35/g' android/app/build.gradle
-          sed -i 's/compileSdk = .*/compileSdk = 35/g' android/app/build.gradle
-          sed -i 's/targetSdk = .*/targetSdk = 35/g' android/app/build.gradle
+          find android/ -type f \( -name "build.gradle" -o -name "build.gradle.kts" \) -exec sed -i 's/compileSdk.*/compileSdk = 35/g' {} +
+          find android/ -type f \( -name "build.gradle" -o -name "build.gradle.kts" \) -exec sed -i 's/targetSdk.*/targetSdk = 35/g' {} +
+          find android/ -type f \( -name "build.gradle" -o -name "build.gradle.kts" \) -exec sed -i 's/compileSdkVersion.*/compileSdkVersion = 35/g' {} +
+          find android/ -type f \( -name "build.gradle" -o -name "build.gradle.kts" \) -exec sed -i 's/targetSdkVersion.*/targetSdkVersion = 35/g' {} +
           
           echo "flutter.compileSdkVersion=35" >> android/local.properties
           echo "flutter.targetSdkVersion=35" >> android/local.properties
