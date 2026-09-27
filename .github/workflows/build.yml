@@ -29,39 +29,25 @@ jobs:
       - name: Generate Android Project
         run: flutter create --platforms=android --org com.mayx .
 
-      - name: Configure SDK 35 in local.properties & gradle.properties
+      - name: Configure SDK 35 globally
         run: |
-          echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
-          echo "flutter.buildMode=release" >> android/local.properties
-          echo "flutter.versionName=1.0.0" >> android/local.properties
-          echo "flutter.versionCode=1" >> android/local.properties
           echo "flutter.compileSdkVersion=35" >> android/local.properties
           echo "flutter.targetSdkVersion=35" >> android/local.properties
           echo "flutter.minSdkVersion=21" >> android/local.properties
-          
+
           echo "android.compileSdkVersion=35" >> android/gradle.properties
           echo "android.targetSdkVersion=35" >> android/gradle.properties
+          echo "android.experimental.sdk.defaultCompileSdk=35" >> android/gradle.properties
 
-      - name: Safe Override Subprojects compileSdk to 35
+      - name: Force All Subprojects SDK to 35
         run: |
           cat << 'EOF' >> android/build.gradle.kts
 
           subprojects {
-              project.configurations.all {
-                  resolutionStrategy.eachDependency {
-                      if (requested.group == "com.android.support" || requested.group == "androidx") {
-                          // Force dependencies alignment
-                      }
-                  }
-              }
-              plugins.withId("com.android.library") {
-                  configure<com.android.build.gradle.LibraryExtension> {
-                      compileSdk = 35
-                  }
-              }
-              plugins.withId("com.android.application") {
-                  configure<com.android.build.gradle.AppExtension> {
-                      compileSdk = 35
+              afterEvaluate {
+                  if (project.hasProperty("android")) {
+                      val android = project.extensions.findByName("android") as? com.android.build.gradle.BaseExtension
+                      android?.compileSdkVersion(35)
                   }
               }
           }
