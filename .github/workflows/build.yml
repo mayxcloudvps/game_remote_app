@@ -29,8 +29,12 @@ jobs:
       - name: Generate Android Platform Files
         run: flutter create --platforms=android .
 
-      - name: Fix minSdkVersion for WebRTC
+      - name: Fix SDK Versions for WebRTC
         run: |
+          sed -i 's/compileSdkVersion .*/compileSdkVersion 34/g' android/app/build.gradle || true
+          sed -i 's/compileSdk .*/compileSdk = 34/g' android/app/build.gradle || true
+          sed -i 's/targetSdkVersion .*/targetSdkVersion 34/g' android/app/build.gradle || true
+          sed -i 's/targetSdk .*/targetSdk = 34/g' android/app/build.gradle || true
           sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 21/g' android/app/build.gradle || true
 
       - name: Get dependencies
