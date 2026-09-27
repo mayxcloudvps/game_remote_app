@@ -29,13 +29,40 @@ jobs:
       - name: Generate Android Platform Files
         run: flutter create --platforms=android .
 
-      - name: Fix SDK Versions for WebRTC
+      - name: Override build.gradle for Android SDK 34
         run: |
-          sed -i 's/compileSdkVersion .*/compileSdkVersion 34/g' android/app/build.gradle || true
-          sed -i 's/compileSdk .*/compileSdk = 34/g' android/app/build.gradle || true
-          sed -i 's/targetSdkVersion .*/targetSdkVersion 34/g' android/app/build.gradle || true
-          sed -i 's/targetSdk .*/targetSdk = 34/g' android/app/build.gradle || true
-          sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 21/g' android/app/build.gradle || true
+          cat << 'EOF' > android/app/build.gradle
+          plugins {
+              id "com.android.application"
+              id "kotlin-android"
+              id "dev.flutter.flutter-gradle-plugin"
+          }
+
+          android {
+              namespace "com.mayx.cloudgaming"
+              compileSdk 34
+
+              defaultConfig {
+                  applicationId "com.mayx.cloudgaming"
+                  minSdk 21
+                  targetSdk 34
+                  versionCode 1
+                  versionName "1.0.0"
+              }
+
+              buildTypes {
+                  release {
+                      signingConfig signingConfigs.debug
+                      minifyEnabled false
+                      shrinkResources false
+                  }
+              }
+          }
+
+          flutter {
+              source '../..'
+          }
+          EOF
 
       - name: Get dependencies
         run: flutter pub get
