@@ -6,279 +6,277 @@ import 'package:http/http.dart' as http;
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const MayxCloudGamingApp());
+  SystemChrome.setPreferredOrientations([
+    DeviceOrientation.landscapeLeft,
+    DeviceOrientation.landscapeRight,
+  ]);
+  runApp(const MayxCloudApp());
 }
 
-class MayxCloudGamingApp extends StatelessWidget {
-  const MayxCloudGamingApp({super.key});
+class MayxCloudApp extends StatelessWidget {
+  const MayxCloudApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'MÂYX Cloud Gaming',
+      title: 'Mayx Cloud Gaming',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: const Color(0xFF0F172A),
+        scaffoldBackgroundColor: Colors.black,
       ),
-      home: const StreamViewerScreen(),
+      home: const RemoteScreen(),
     );
   }
 }
 
-class StreamViewerScreen extends StatefulWidget {
-  const StreamViewerScreen({super.key});
+class RemoteScreen extends StatefulWidget {
+  const RemoteScreen({super.key});
 
   @override
-  State<StreamViewerScreen> createState() => _StreamViewerScreenState();
+  State<RemoteScreen> createState() => _RemoteScreenState();
 }
 
-class _StreamViewerScreenState extends State<StreamViewerScreen> {
-  final TextEditingController _ipController = TextEditingController();
+class _RemoteScreenState extends State<RemoteScreen> {
+  final TextEditingController _serverIpController = TextEditingController(text: '192.168.1.100:8080');
+  
   final RTCVideoRenderer _remoteRenderer = RTCVideoRenderer();
   RTCPeerConnection? _peerConnection;
   RTCDataChannel? _dataChannel;
   
+  bool _isRendererReady = false;
   bool _isConnected = false;
-  bool _isLoading = false;
-  bool _isFullScreen = false;
-  final FocusNode _keyboardFocusNode = FocusNode();
+  bool _isConnecting = false;
 
   @override
   void initState() {
     super.initState();
-    _remoteRenderer.initialize();
+    _initRenderer();
   }
 
-  @override
-  void dispose() {
-    _remoteRenderer.dispose();
-    _peerConnection?.close();
-    _keyboardFocusNode.dispose();
-    _exitFullScreen();
-    super.dispose();
-  }
-
-  // Bật chế độ Full Screen (Xoay ngang & Ẩn thanh trạng thái)
-  void _enterFullScreen() {
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
-    setState(() => _isFullScreen = true);
-  }
-
-  // Tắt chế độ Full Screen (Trở lại màn hình dọc mặc định)
-  void _exitFullScreen() {
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
-    setState(() => _isFullScreen = false);
-  }
-
-  void _toggleFullScreen() {
-    if (_isFullScreen) {
-      _exitFullScreen();
-    } else {
-      _enterFullScreen();
-    }
-  }
-
-  void _sendControlData(Map<String, dynamic> data) {
-    if (_dataChannel != null && _dataChannel!.state == RTCDataChannelState.RTCDataChannelOpen) {
-      _dataChannel!.send(RTCDataChannelMessage(jsonEncode(data)));
-    }
-  }
-
-  Future<void> _connectToServer() async {
-    setState(() => _isLoading = true);
+  // KHỞI TẠO RENDERER AN TOÀN TRÁNH CRASH NATIVE
+  Future<void> _initRenderer() async {
     try {
-      String inputIp = _ipController.text.trim();
-      if (inputIp.isEmpty) {
-        throw Exception("Vui lòng nhập IP Server!");
+      await _remoteRenderer.initialize();
+      if (mounted) {
+        setState(() {
+          _isRendererReady = true;
+        });
       }
-      if (!inputIp.contains(':')) {
-        inputIp = "$inputIp:8080";
-      }
+    } catch (e) {
+      debugPrint("Lỗi khởi tạo RTCVideoRenderer: $e");
+    }
+  }
 
-      final uri = Uri.parse(inputIp.startsWith('http') ? inputIp : 'http://$inputIp/offer');
+  Future<void> _connectToSignalingServer() async {
+    if (!_isRendererReady) {
+      _showSnackBar("Renderer chưa sẵn sàng, vui lòng đợi...");
+      return;
+    }
 
-      _peerConnection = await createPeerConnection({
-        'iceServers': [{'urls': 'stun:stun.l.google.com:19302'}]
-      });
+    setState(() {
+      _isConnecting = true;
+    });
 
-      RTCDataChannelInit init = RTCDataChannelInit()..ordered = false;
-      _dataChannel = await _peerConnection!.createDataChannel('control', init);
+    try {
+      // 1. Cấu hình RTC PeerConnection
+      Map<String, dynamic> configuration = {
+        'iceServers': [
+          {'urls': 'stun:stun.l.google.com:19302'},
+        ]
+      };
 
+      Map<String, dynamic> mediaConstraints = {
+        'mandatory': {},
+        'optional': [
+          {'DtlsSrtpKeyAgreement': true},
+        ],
+      };
+
+      _peerConnection = await createPeerConnection(configuration, mediaConstraints);
+
+      // Lắng nghe Stream Video gửi về
       _peerConnection!.onTrack = (RTCTrackEvent event) {
-        if (event.track.kind == 'video') {
-          setState(() {
-            _remoteRenderer.srcObject = event.streams[0];
-            _isConnected = true;
-            _isLoading = false;
-          });
-          _enterFullScreen(); // Tự động bật Fullscreen khi bắt đầu stream
-          _keyboardFocusNode.requestFocus();
+        if (event.track.kind == 'video' && event.streams.isNotEmpty) {
+          if (mounted) {
+            setState(() {
+              _remoteRenderer.srcObject = event.streams[0];
+              _isConnected = true;
+              _isConnecting = false;
+            });
+          }
         }
       };
 
-      await _peerConnection!.addTransceiver(
-        kind: RTCRtpMediaType.RTCRtpMediaTypeVideo,
-        init: RTCRtpTransceiverInit(direction: TransceiverDirection.RecvOnly),
-      );
+      // Tự động giải phóng khi ngắt kết nối
+      _peerConnection!.onIceConnectionState = (RTCIceConnectionState state) {
+        if (state == RTCIceConnectionState.RTCIceConnectionStateDisconnected ||
+            state == RTCIceConnectionState.RTCIceConnectionStateFailed) {
+          _disconnect();
+        }
+      };
 
-      RTCSessionDescription offer = await _peerConnection!.createOffer();
+      // 2. Tạo Data Channel cho Chuột & Bàn phím
+      RTCDataChannelInit dataChannelDict = RTCDataChannelInit();
+      _dataChannel = await _peerConnection!.createDataChannel('controlChannel', dataChannelDict);
+
+      // 3. Tạo SDP Offer
+      RTCSessionDescription offer = await _peerConnection!.createOffer({
+        'offerToReceiveVideo': 1,
+        'offerToReceiveAudio': 1,
+      });
       await _peerConnection!.setLocalDescription(offer);
 
+      // 4. Gửi Offer lên WebRTC Signaling Server
+      final serverUrl = 'http://${_serverIpController.text.trim()}/offer';
       final response = await http.post(
-        uri,
+        Uri.parse(serverUrl),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'sdp': offer.sdp, 'type': offer.type}),
-      ).timeout(const Duration(seconds: 10));
+        body: jsonEncode({
+          'sdp': offer.sdp,
+          'type': offer.type,
+        }),
+      );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         RTCSessionDescription answer = RTCSessionDescription(data['sdp'], data['type']);
         await _peerConnection!.setRemoteDescription(answer);
       } else {
-        throw Exception("Server từ chối kết nối (${response.statusCode})");
+        throw Exception("Server từ chối kết nối (HTTP ${response.statusCode})");
       }
     } catch (e) {
-      setState(() => _isLoading = false);
+      _disconnect();
+      _showSnackBar("Kết nối thất bại: $e");
+    } finally {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi kết nối: $e'), backgroundColor: Colors.red),
-        );
+        setState(() {
+          _isConnecting = false;
+        });
       }
     }
   }
 
+  void _sendControlEvent(String type, Map<String, dynamic> data) {
+    if (_dataChannel != null && _dataChannel!.state == RTCDataChannelState.RTCDataChannelStateOpen) {
+      final payload = jsonEncode({'type': type, 'data': data});
+      _dataChannel!.send(RTCDataChannelMessage(payload));
+    }
+  }
+
   void _disconnect() {
+    _remoteRenderer.srcObject = null;
     _dataChannel?.close();
     _peerConnection?.close();
-    _exitFullScreen();
-    setState(() {
-      _isConnected = false;
-      _remoteRenderer.srcObject = null;
-    });
+    _peerConnection = null;
+    
+    if (mounted) {
+      setState(() {
+        _isConnected = false;
+        _isConnecting = false;
+      });
+    }
+  }
+
+  void _showSnackBar(String msg) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    }
+  }
+
+  @override
+  void dispose() {
+    _remoteRenderer.srcObject = null;
+    _remoteRenderer.dispose();
+    _dataChannel?.close();
+    _peerConnection?.close();
+    _serverIpController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: _isConnected 
-          ? null 
-          : AppBar(
-              title: const Text('MÂYX Cloud Gaming Client'),
-              centerTitle: true,
-              backgroundColor: const Color(0xFF1E293B),
-            ),
-      body: _isConnected
-          ? KeyboardListener(
-              focusNode: _keyboardFocusNode,
-              autofocus: true,
-              onKeyEvent: (KeyEvent event) {
-                final key = event.logicalKey.debugName ?? '';
-                final isDown = event is KeyDownEvent;
-                _sendControlData({
-                  'type': 'keyboard',
-                  'key': key,
-                  'is_down': isDown,
-                });
-              },
-              child: Listener(
-                onPointerHover: (PointerHoverEvent event) {
-                  _sendControlData({
-                    'type': 'mouse_move',
-                    'dx': event.delta.dx,
-                    'dy': event.delta.dy,
-                  });
-                },
-                onPointerDown: (PointerDownEvent event) {
-                  _sendControlData({
-                    'type': 'mouse_click',
-                    'button': event.buttons,
-                    'is_down': true,
-                  });
-                },
-                onPointerUp: (PointerUpEvent event) {
-                  _sendControlData({
-                    'type': 'mouse_click',
-                    'button': event.buttons,
-                    'is_down': false,
-                  });
-                },
-                child: Stack(
-                  children: [
-                    Positioned.fill(
-                      child: RTCVideoView(
-                        _remoteRenderer,
-                        objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
-                      ),
+      body: Stack(
+        children: [
+          // KHU VỰC HIỂN THỊ STREAM VIDEO
+          Positioned.fill(
+            child: _isConnected && _isRendererReady
+                ? Listener(
+                    onPointerDown: (event) => _sendControlEvent('mousedown', {'button': event.buttons}),
+                    onPointerUp: (event) => _sendControlEvent('mouseup', {'button': 0}),
+                    onPointerMove: (event) => _sendControlEvent('mousemove', {
+                      'dx': event.delta.dx,
+                      'dy': event.delta.dy,
+                    }),
+                    child: RTCVideoView(
+                      _remoteRenderer,
+                      objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitContain,
                     ),
-                    // Thanh nút chức năng góc trên bên phải
-                    Positioned(
-                      top: 15,
-                      right: 15,
-                      child: Row(
-                        children: [
-                          // Nút Bật/Tắt Toàn Màn Hình
-                          FloatingActionButton.small(
-                            heroTag: "btn_fullscreen",
-                            backgroundColor: Colors.black54,
-                            onPressed: _toggleFullScreen,
-                            child: Icon(
-                              _isFullScreen ? Icons.fullscreen_exit : Icons.fullscreen,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          // Nút Ngắt kết nối
-                          FloatingActionButton.small(
-                            heroTag: "btn_disconnect",
-                            backgroundColor: Colors.red.withOpacity(0.8),
-                            onPressed: _disconnect,
-                            child: const Icon(Icons.power_settings_new),
-                          ),
-                        ],
+                  )
+                : Container(
+                    color: Colors.black87,
+                    child: Center(
+                      child: Text(
+                        _isConnecting ? "Đang thiết lập kết nối WebRTC..." : "Chưa kết nối Máy chủ",
+                        style: const TextStyle(color: Colors.white70, fontSize: 16),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-            )
-          : Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  TextField(
-                    controller: _ipController,
-                    decoration: const InputDecoration(
-                      labelText: 'Nhập IP Server (Ví dụ: 192.168.1.15)',
-                      hintText: '192.168.1.15',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.lan),
                     ),
                   ),
-                  const SizedBox(height: 20),
-                  _isLoading
-                      ? const CircularProgressIndicator()
-                      : ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            minimumSize: const Size.fromHeight(50),
-                            backgroundColor: const Color(0xFF0284C7),
+          ),
+
+          // OVERLAY ĐIỀU KHIỂN & ĐỊA CHỈ SERVER
+          if (!_isConnected)
+            Positioned(
+              top: 40,
+              left: 40,
+              right: 40,
+              child: Card(
+                color: Colors.black.withOpacity(0.8),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _serverIpController,
+                          decoration: const InputDecoration(
+                            labelText: 'Địa chỉ Server (IP:Port)',
+                            border: OutlineInputBorder(),
                           ),
-                          onPressed: _connectToServer,
-                          icon: const Icon(Icons.play_arrow),
-                          label: const Text('KẾT NỐI SERVER', style: TextStyle(fontWeight: FontWeight.bold)),
                         ),
-                ],
+                      ),
+                      const SizedBox(width: 16),
+                      ElevatedButton(
+                        onPressed: (_isConnecting || !_isRendererReady) ? null : _connectToSignalingServer,
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                        ),
+                        child: _isConnecting
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Text('KẾT NỐI'),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
+
+          // NÚT NGẮT KẾT NỐI (KHI ĐANG STREAM)
+          if (_isConnected)
+            Positioned(
+              top: 20,
+              right: 20,
+              child: IconButton(
+                icon: const Icon(Icons.power_settings_new, color: Colors.red, size: 30),
+                onPressed: _disconnect,
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
