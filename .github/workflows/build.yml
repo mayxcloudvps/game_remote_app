@@ -42,16 +42,26 @@ jobs:
           echo "android.compileSdkVersion=35" >> android/gradle.properties
           echo "android.targetSdkVersion=35" >> android/gradle.properties
 
-      - name: Override Subprojects compileSdk to 35
+      - name: Safe Override Subprojects compileSdk to 35
         run: |
           cat << 'EOF' >> android/build.gradle.kts
 
           subprojects {
-              afterEvaluate {
-                  if (plugins.hasPlugin("com.android.application") || plugins.hasPlugin("com.android.library")) {
-                      configure<com.android.build.gradle.BaseExtension> {
-                          compileSdkVersion(35)
+              project.configurations.all {
+                  resolutionStrategy.eachDependency {
+                      if (requested.group == "com.android.support" || requested.group == "androidx") {
+                          // Force dependencies alignment
                       }
+                  }
+              }
+              plugins.withId("com.android.library") {
+                  configure<com.android.build.gradle.LibraryExtension> {
+                      compileSdk = 35
+                  }
+              }
+              plugins.withId("com.android.application") {
+                  configure<com.android.build.gradle.AppExtension> {
+                      compileSdk = 35
                   }
               }
           }
