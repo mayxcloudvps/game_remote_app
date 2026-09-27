@@ -26,20 +26,21 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Generate Android Project
-        run: flutter create --platforms=android --org com.mayx .
-
-      - name: Configure SDK 35 globally in properties
+      - name: Configure Android SDK Properties
         run: |
-          echo "flutter.compileSdkVersion=35" >> android/local.properties
+          mkdir -p android
+          echo "flutter.compileSdkVersion=35" > android/local.properties
           echo "flutter.targetSdkVersion=35" >> android/local.properties
           echo "flutter.minSdkVersion=21" >> android/local.properties
 
-          echo "android.compileSdkVersion=35" >> android/gradle.properties
+          echo "android.compileSdkVersion=35" > android/gradle.properties
           echo "android.targetSdkVersion=35" >> android/gradle.properties
 
       - name: Get dependencies
         run: flutter pub get
+
+      - name: Analyze Dart Code
+        run: flutter analyze || true
 
       - name: Build APK
         run: flutter build apk --release --no-tree-shake-icons
@@ -64,10 +65,8 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Enable Windows Desktop & Config
-        run: |
-          flutter config --enable-windows-desktop
-          flutter create --platforms=windows .
+      - name: Enable Windows Desktop
+        run: flutter config --enable-windows-desktop
 
       - name: Get dependencies
         run: flutter pub get
