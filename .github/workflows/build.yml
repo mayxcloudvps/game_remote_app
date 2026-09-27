@@ -29,7 +29,32 @@ jobs:
       - name: Generate Android Platform Files
         run: flutter create --platforms=android .
 
-      - name: Override build.gradle (Fix SDK 35 & Java 17)
+      # Fix Root build.gradle (Kotlin & Gradle Plugin)
+      - name: Fix Root build.gradle
+        run: |
+          cat << 'EOF' > android/build.gradle
+          allprojects {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+
+          rootProject.buildDir = "../build"
+          subprojects {
+              project.buildDir = "${rootProject.buildDir}/${project.name}"
+          }
+          subprojects {
+              project.evaluationDependsOn(":app")
+          }
+
+          tasks.register("clean", Delete) {
+              delete rootProject.buildDir
+          }
+          EOF
+
+      # Fix App build.gradle (SDK 35 & Java 17)
+      - name: Fix App build.gradle
         run: |
           cat << 'EOF' > android/app/build.gradle
           plugins {
