@@ -29,15 +29,17 @@ jobs:
       - name: Generate Android Platform Files
         run: flutter create --platforms=android --org com.mayx .
 
+      - name: Set SDK 35 in gradle.properties
+        run: |
+          echo "android.compileSdkVersion=35" >> android/gradle.properties
+          echo "android.targetSdkVersion=35" >> android/gradle.properties
+          echo "android.minSdkVersion=21" >> android/gradle.properties
+
       - name: Get dependencies
         run: flutter pub get
 
       - name: Build APK
-        run: |
-          flutter build apk --release --no-tree-shake-icons \
-            --build-property=android.compileSdkVersion=35 \
-            --build-property=android.targetSdkVersion=35 \
-            --build-property=android.minSdkVersion=21
+        run: flutter build apk --release --no-tree-shake-icons
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
