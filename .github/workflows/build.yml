@@ -26,12 +26,16 @@ jobs:
         with:
           channel: 'stable'
 
-      # Sửa compileSdkVersion = 35 cho tất cả plugin mà không cần tạo lại dự án
-      - name: Force SDK 35 for All Android Subprojects
+      # Cập nhật project Android lên V2 Embedding
+      - name: Upgrade Android Project to V2 Embedding
         run: |
-          mkdir -p android
-          if [ -f "android/build.gradle" ]; then
-            cat << 'EOF' >> android/build.gradle
+          rm -rf android
+          flutter create --platforms=android --org com.mayx .
+
+      # Ép compileSdkVersion = 35 cho TẤT CẢ subprojects (bao gồm flutter_webrtc)
+      - name: Force SDK 35 on All Android Plugins
+        run: |
+          cat << 'EOF' >> android/build.gradle
 
           subprojects {
               afterEvaluate { project ->
@@ -46,7 +50,6 @@ jobs:
               }
           }
           EOF
-          fi
 
       - name: Get dependencies
         run: flutter pub get
