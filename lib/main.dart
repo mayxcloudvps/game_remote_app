@@ -17,7 +17,7 @@ class MayxCloudApp extends StatelessWidget {
   const MayxCloudApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(Widget context) {
     return MaterialApp(
       title: 'Mayx Cloud Gaming',
       debugShowCheckedModeBanner: false,
@@ -75,9 +75,11 @@ class _RemoteScreenState extends State<RemoteScreen> {
       return;
     }
 
-    setState(() {
-      _isConnecting = true;
-    });
+    if (mounted) {
+      setState(() {
+        _isConnecting = true;
+      });
+    }
 
     try {
       Map<String, dynamic> configuration = {
@@ -123,15 +125,17 @@ class _RemoteScreenState extends State<RemoteScreen> {
       });
       await _peerConnection!.setLocalDescription(offer);
 
-      final serverUrl = 'http://${_serverIpController.text.trim()}/offer';
+      final ipText = _serverIpController.text.trim();
+      final formattedUrl = ipText.startsWith('http') ? '$ipText/offer' : 'http://$ipText/offer';
+      
       final response = await http.post(
-        Uri.parse(serverUrl),
+        Uri.parse(formattedUrl),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'sdp': offer.sdp,
           'type': offer.type,
         }),
-      );
+      ).timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -141,6 +145,7 @@ class _RemoteScreenState extends State<RemoteScreen> {
         throw Exception("Server từ chối kết nối (HTTP ${response.statusCode})");
       }
     } catch (e) {
+      debugPrint("Lỗi kết nối WebRTC: $e");
       _disconnect();
       _showSnackBar("Kết nối thất bại: $e");
     } finally {
@@ -153,14 +158,12 @@ class _RemoteScreenState extends State<RemoteScreen> {
   }
 
   void _sendControlEvent(String type, Map<String, dynamic> data) {
-    // Tối ưu kiểm tra trạng thái DataChannel bằng String để không dính lỗi Enum
     if (_dataChannel != null && _dataChannel!.state.toString().toLowerCase().contains('open')) {
       final payload = jsonEncode({'type': type, 'data': data});
       _dataChannel!.send(RTCDataChannelMessage(payload));
     }
   }
 
-  // Bắt từng sự kiện gõ chữ thời gian thực (nhập chữ nào gửi ngay chữ đó)
   void _onInputChanged(String currentText) {
     if (currentText.length > _lastText.length) {
       final newChar = currentText.substring(_lastText.length);
@@ -184,9 +187,13 @@ class _RemoteScreenState extends State<RemoteScreen> {
   }
 
   void _disconnect() {
-    _remoteRenderer.srcObject = null;
-    _dataChannel?.close();
-    _peerConnection?.close();
+    try {
+      _remoteRenderer.srcObject = null;
+      _dataChannel?.close();
+      _peerConnection?.close();
+    } catch (e) {
+      debugPrint("Lỗi ngắt kết nối: $e");
+    }
     _peerConnection = null;
     _hiddenInputFocusNode.unfocus();
     
@@ -239,7 +246,7 @@ class _RemoteScreenState extends State<RemoteScreen> {
                     color: Colors.black87,
                     child: Center(
                       child: Text(
-                        _isConnecting ? "Đang thiết lập kết nối WebRTC..." : "Chưa kết nối Máy chủ",
+                        _isConnecting ? "Đang kết nối Máy chủ..." : "Chưa kết nối Máy chủ",
                         style: const TextStyle(color: Colors.white70, fontSize: 16),
                       ),
                     ),
