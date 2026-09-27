@@ -29,7 +29,21 @@ jobs:
       - name: Generate Android Project
         run: flutter create --platforms=android --org com.mayx .
 
-      - name: Configure SDK 35 globally in properties
+      - name: Force SDK 35 on All Subprojects via Gradle Settings
+        run: |
+          cat << 'EOF' >> android/settings.gradle.kts
+
+          gradle.beforeProject {
+              project.afterEvaluate {
+                  if (project.plugins.hasPlugin("com.android.application") || project.plugins.hasPlugin("com.android.library")) {
+                      val android = project.extensions.findByName("android") as? com.android.build.gradle.BaseExtension
+                      android?.compileSdkVersion(35)
+                  }
+              }
+          }
+          EOF
+
+      - name: Configure SDK 35 in local & gradle properties
         run: |
           echo "flutter.compileSdkVersion=35" >> android/local.properties
           echo "flutter.targetSdkVersion=35" >> android/local.properties
@@ -41,12 +55,8 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
-      - name: Build APK with SDK 35 Flags
-        run: |
-          flutter build apk --release --no-tree-shake-icons \
-            --PcompileSdkVersion=35 \
-            --PtargetSdkVersion=35 \
-            --PminSdkVersion=21
+      - name: Build APK
+        run: flutter build apk --release --no-tree-shake-icons
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
