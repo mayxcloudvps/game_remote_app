@@ -26,16 +26,12 @@ jobs:
         with:
           channel: 'stable'
 
-      # Tạo lại project Android chuẩn
-      - name: Re-create Android Project
+      # Sửa compileSdkVersion = 35 cho tất cả plugin mà không cần tạo lại dự án
+      - name: Force SDK 35 for All Android Subprojects
         run: |
-          rm -rf android
-          flutter create --platforms=android --org com.mayx .
-
-      # Ép compileSdkVersion = 35 cho TẤT CẢ các plugin con (bao gồm flutter_webrtc)
-      - name: Force SDK 35 for All Subprojects
-        run: |
-          cat << 'EOF' >> android/build.gradle
+          mkdir -p android
+          if [ -f "android/build.gradle" ]; then
+            cat << 'EOF' >> android/build.gradle
 
           subprojects {
               afterEvaluate { project ->
@@ -50,6 +46,7 @@ jobs:
               }
           }
           EOF
+          fi
 
       - name: Get dependencies
         run: flutter pub get
@@ -61,7 +58,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: MayxCloudGaming-Android-Client
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: build/app/outputs/flutter-apk/*.apk
 
   # ==========================================
   # JOB 2: BUILD WINDOWS CLIENT (.EXE)
