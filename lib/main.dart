@@ -150,8 +150,10 @@ class _RemoteScreenState extends State<RemoteScreen> {
   }
 
   void _sendControlEvent(String type, Map<String, dynamic> data) {
-    // FIX DÙNG RTCDataChannelState.open CHUẨN MỚI
-    if (_dataChannel != null && _dataChannel!.state == RTCDataChannelState.open) {
+    // FIX TỆT ĐỐI LỖI ENUM CỦA FLUTTER WEBRTC
+    if (_dataChannel != null && 
+        (_dataChannel!.state == RTCDataChannelState.RTCDataChannelStateOpen ||
+         _dataChannel!.state.toString().contains('Open'))) {
       final payload = jsonEncode({'type': type, 'data': data});
       _dataChannel!.send(RTCDataChannelMessage(payload));
     }
