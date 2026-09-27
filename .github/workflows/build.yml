@@ -29,7 +29,25 @@ jobs:
       - name: Generate Android Project
         run: flutter create --platforms=android --org com.mayx .
 
-      - name: Hardcode Perfect Gradle Configuration
+      # Ép tất cả thư viện con (Subprojects / Plugins như flutter_webrtc) dùng compileSdk 35
+      - name: Override Subprojects SDK to 35
+        run: |
+          cat << 'EOF' >> android/build.gradle
+
+          subprojects {
+              afterEvaluate { project ->
+                  if (project.hasProperty('android')) {
+                      project.android {
+                          compileSdkVersion 35
+                          buildToolsVersion '35.0.0'
+                      }
+                  }
+              }
+          }
+          EOF
+
+      # Ghi đè file android/app/build.gradle chuẩn Java 17 & SDK 35
+      - name: Hardcode Perfect App Gradle Configuration
         run: |
           cat << 'EOF' > android/app/build.gradle
           plugins {
