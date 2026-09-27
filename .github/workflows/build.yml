@@ -26,14 +26,19 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Force Android V2 Embedding & Config SDK 35
+      # Re-generate thư mục Android chuẩn V2 Embedding để xóa sạch vết tích V1
+      - name: Re-create Android Project with V2 Embedding
         run: |
-          mkdir -p android
-          echo "flutter.compileSdkVersion=35" > android/local.properties
+          rm -rf android
+          flutter create --platforms=android --org com.mayx .
+
+      - name: Configure SDK 35 globally in properties
+        run: |
+          echo "flutter.compileSdkVersion=35" >> android/local.properties
           echo "flutter.targetSdkVersion=35" >> android/local.properties
           echo "flutter.minSdkVersion=21" >> android/local.properties
 
-          echo "android.compileSdkVersion=35" > android/gradle.properties
+          echo "android.compileSdkVersion=35" >> android/gradle.properties
           echo "android.targetSdkVersion=35" >> android/gradle.properties
           echo "android.useAndroidX=true" >> android/gradle.properties
           echo "android.enableJetifier=true" >> android/gradle.properties
