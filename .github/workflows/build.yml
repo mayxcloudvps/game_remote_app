@@ -26,13 +26,53 @@ jobs:
         with:
           channel: 'stable'
 
-      # Dựng lại khung Android V2
-      - name: Upgrade Android Project to V2 Embedding
+      - name: Upgrade Android Project
         run: |
           rm -rf android
           flutter create --platforms=android --org com.mayx .
 
-      # Ép compileSdkVersion = 35 cho TẤT CẢ subprojects (bao gồm flutter_webrtc)
+      # Thêm quyền Internet & WebRTC vào AndroidManifest.xml để tránh văng app
+      - name: Inject Android Permissions
+        run: |
+          cat << 'EOF' > android/app/src/main/AndroidManifest.xml
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+              <uses-permission android:name="android.permission.INTERNET"/>
+              <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+              <uses-permission android:name="android.permission.CAMERA"/>
+              <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+              <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
+              
+              <application
+                  android:label="Mayx Cloud Gaming"
+                  android:name="${applicationName}"
+                  android:icon="@mipmap/ic_launcher"
+                  android:usesCleartextTraffic="true">
+                  <activity
+                      android:name=".MainActivity"
+                      android:exported="true"
+                      android:launchMode="singleTop"
+                      android:taskAffinity=""
+                      android:theme="@style/LaunchTheme"
+                      android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+                      android:hardwareAccelerated="true"
+                      android:windowSoftInputMode="adjustResize">
+                      <meta-data
+                        android:name="io.flutter.embedding.android.NormalTheme"
+                        android:resource="@style/NormalTheme"
+                        />
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN"/>
+                          <category android:name="android.intent.category.LAUNCHER"/>
+                      </intent-filter>
+                  </activity>
+                  <meta-data
+                      android:name="flutterEmbedding"
+                      android:value="2" />
+              </application>
+          </manifest>
+          EOF
+
+      # Ép compileSdkVersion = 35 cho TẤT CẢ subprojects
       - name: Force SDK 35 on All Android Plugins
         run: |
           cat << 'EOF' >> android/build.gradle
@@ -54,14 +94,12 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
-      # Cấp quyền và chạy Gradle trực tiếp để build APK Release
       - name: Build APK with Gradle
         run: |
           cd android
           chmod +x gradlew
           ./gradlew assembleRelease --no-daemon
 
-      # Upload đúng đường dẫn APK do Gradle sinh ra
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
