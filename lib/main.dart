@@ -17,7 +17,7 @@ class MayxCloudApp extends StatelessWidget {
   const MayxCloudApp({super.key});
 
   @override
-  Widget build(Widget context) {
+  Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Mayx Cloud Gaming',
       debugShowCheckedModeBanner: false,
@@ -302,7 +302,7 @@ class _RemoteScreenState extends State<RemoteScreen> {
                   IconButton(
                     icon: const Icon(Icons.keyboard, color: Colors.white, size: 28),
                     style: IconButton.styleFrom(backgroundColor: Colors.black54),
-                    tooltip: 'Bật/Tắt bàn phím gõ trực tiếp',
+                    tooltip: 'Bật/Tắt bàn phím',
                     onPressed: _toggleKeyboard,
                   ),
                   const SizedBox(width: 12),
