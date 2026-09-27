@@ -153,22 +153,19 @@ class _RemoteScreenState extends State<RemoteScreen> {
   }
 
   void _sendControlEvent(String type, Map<String, dynamic> data) {
-    if (_dataChannel != null && 
-        (_dataChannel!.state == RTCDataChannelState.RTCDataChannelStateOpen ||
-         _dataChannel!.state.toString().contains('Open'))) {
+    // Tối ưu kiểm tra trạng thái DataChannel bằng String để không dính lỗi Enum
+    if (_dataChannel != null && _dataChannel!.state.toString().toLowerCase().contains('open')) {
       final payload = jsonEncode({'type': type, 'data': data});
       _dataChannel!.send(RTCDataChannelMessage(payload));
     }
   }
 
-  // Bắt từng sự kiện gõ chữ thời gian thực
+  // Bắt từng sự kiện gõ chữ thời gian thực (nhập chữ nào gửi ngay chữ đó)
   void _onInputChanged(String currentText) {
     if (currentText.length > _lastText.length) {
-      // Vừa gõ thêm ký tự mới -> Gửi ký tự đó sang server ngay
       final newChar = currentText.substring(_lastText.length);
       _sendControlEvent('type_text', {'text': newChar});
     } else if (currentText.length < _lastText.length) {
-      // Vừa bấm nút Backspace (Xóa) -> Gửi sự kiện xóa sang server
       final diff = _lastText.length - currentText.length;
       for (int i = 0; i < diff; i++) {
         _sendControlEvent('keydown', {'key': 'Backspace'});
@@ -178,7 +175,6 @@ class _RemoteScreenState extends State<RemoteScreen> {
     _lastText = currentText;
   }
 
-  // Bật/tắt bàn phím ảo của hệ thống
   void _toggleKeyboard() {
     if (_hiddenInputFocusNode.hasFocus) {
       _hiddenInputFocusNode.unfocus();
@@ -225,7 +221,6 @@ class _RemoteScreenState extends State<RemoteScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // KHU VỰC STREAM VIDEO WEBRTC
           Positioned.fill(
             child: _isConnected && _isRendererReady
                 ? Listener(
@@ -251,7 +246,6 @@ class _RemoteScreenState extends State<RemoteScreen> {
                   ),
           ),
 
-          // OVERLAY ĐIỀU KHIỂN KHI CHƯA KẾT NỐI
           if (!_isConnected)
             Positioned(
               top: 40,
@@ -292,7 +286,6 @@ class _RemoteScreenState extends State<RemoteScreen> {
               ),
             ),
 
-          // THANH ĐIỀU KHIỂN ĐANG KẾT NỐI
           if (_isConnected)
             Positioned(
               top: 20,
@@ -315,7 +308,6 @@ class _RemoteScreenState extends State<RemoteScreen> {
               ),
             ),
 
-          // Ô NHẬP LIỆU ẨN ĐỂ MỞ BÀN PHÍM HỆ THỐNG VA BẮT PHÍM REALTIME
           if (_isConnected)
             Positioned(
               bottom: -100,
