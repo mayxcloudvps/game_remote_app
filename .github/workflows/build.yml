@@ -27,82 +27,17 @@ jobs:
           channel: 'stable'
 
       - name: Generate Android Platform Files
-        run: flutter create --platforms=android .
-
-      # Fix Root build.gradle (Kotlin & Gradle Plugin)
-      - name: Fix Root build.gradle
-        run: |
-          cat << 'EOF' > android/build.gradle
-          allprojects {
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-          }
-
-          rootProject.buildDir = "../build"
-          subprojects {
-              project.buildDir = "${rootProject.buildDir}/${project.name}"
-          }
-          subprojects {
-              project.evaluationDependsOn(":app")
-          }
-
-          tasks.register("clean", Delete) {
-              delete rootProject.buildDir
-          }
-          EOF
-
-      # Fix App build.gradle (SDK 35 & Java 17)
-      - name: Fix App build.gradle
-        run: |
-          cat << 'EOF' > android/app/build.gradle
-          plugins {
-              id "com.android.application"
-              id "kotlin-android"
-              id "dev.flutter.flutter-gradle-plugin"
-          }
-
-          android {
-              namespace "com.mayx.cloudgaming"
-              compileSdk 35
-
-              defaultConfig {
-                  applicationId "com.mayx.cloudgaming"
-                  minSdk 21
-                  targetSdk 35
-                  versionCode 1
-                  versionName "1.0.0"
-              }
-
-              compileOptions {
-                  sourceCompatibility JavaVersion.VERSION_17
-                  targetCompatibility JavaVersion.VERSION_17
-              }
-
-              kotlinOptions {
-                  jvmTarget = "17"
-              }
-
-              buildTypes {
-                  release {
-                      signingConfig signingConfigs.debug
-                      minifyEnabled false
-                      shrinkResources false
-                  }
-              }
-          }
-
-          flutter {
-              source '../..'
-          }
-          EOF
+        run: flutter create --platforms=android --org com.mayx .
 
       - name: Get dependencies
         run: flutter pub get
 
       - name: Build APK
-        run: flutter build apk --release --no-tree-shake-icons
+        run: |
+          flutter build apk --release --no-tree-shake-icons \
+            --build-property=android.compileSdkVersion=35 \
+            --build-property=android.targetSdkVersion=35 \
+            --build-property=android.minSdkVersion=21
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
