@@ -29,21 +29,7 @@ jobs:
       - name: Generate Android Project
         run: flutter create --platforms=android --org com.mayx .
 
-      - name: Force SDK 35 on All Subprojects via Gradle Settings
-        run: |
-          cat << 'EOF' >> android/settings.gradle.kts
-
-          gradle.beforeProject {
-              project.afterEvaluate {
-                  if (project.plugins.hasPlugin("com.android.application") || project.plugins.hasPlugin("com.android.library")) {
-                      val android = project.extensions.findByName("android") as? com.android.build.gradle.BaseExtension
-                      android?.compileSdkVersion(35)
-                  }
-              }
-          }
-          EOF
-
-      - name: Configure SDK 35 in local & gradle properties
+      - name: Configure SDK 35 globally in properties
         run: |
           echo "flutter.compileSdkVersion=35" >> android/local.properties
           echo "flutter.targetSdkVersion=35" >> android/local.properties
