@@ -26,20 +26,52 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Generate Android Platform Files
+      - name: Generate Android Project
         run: flutter create --platforms=android --org com.mayx .
 
-      - name: Patch Gradle Config for SDK 35 and Java 17
+      - name: Hardcode Perfect Gradle Configuration
         run: |
-          # Sửa compileSdk và targetSdk trong android/app/build.gradle
-          sed -i 's/compileSdk = .*/compileSdk = 35/g' android/app/build.gradle || true
-          sed -i 's/compileSdkVersion .*/compileSdkVersion 35/g' android/app/build.gradle || true
-          sed -i 's/targetSdk = .*/targetSdk = 35/g' android/app/build.gradle || true
-          sed -i 's/targetSdkVersion .*/targetSdkVersion 35/g' android/app/build.gradle || true
-          
-          # Đảm bảo compileOptions dùng Java 17
-          sed -i 's/JavaVersion.VERSION_1_8/JavaVersion.VERSION_17/g' android/app/build.gradle || true
-          sed -i 's/JavaVersion.VERSION_11/JavaVersion.VERSION_17/g' android/app/build.gradle || true
+          cat << 'EOF' > android/app/build.gradle
+          plugins {
+              id "com.android.application"
+              id "kotlin-android"
+              id "dev.flutter.flutter-gradle-plugin"
+          }
+
+          android {
+              namespace "com.mayx.cloudgaming"
+              compileSdk 35
+
+              defaultConfig {
+                  applicationId "com.mayx.cloudgaming"
+                  minSdk 21
+                  targetSdk 35
+                  versionCode 1
+                  versionName "1.0.0"
+              }
+
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_17
+                  targetCompatibility JavaVersion.VERSION_17
+              }
+
+              kotlinOptions {
+                  jvmTarget = "17"
+              }
+
+              buildTypes {
+                  release {
+                      signingConfig signingConfigs.debug
+                      minifyEnabled false
+                      shrinkResources false
+                  }
+              }
+          }
+
+          flutter {
+              source '../..'
+          }
+          EOF
 
       - name: Get dependencies
         run: flutter pub get
