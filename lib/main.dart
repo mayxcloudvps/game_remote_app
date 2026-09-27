@@ -38,7 +38,9 @@ class RemoteScreen extends StatefulWidget {
 
 class _RemoteScreenState extends State<RemoteScreen> {
   final TextEditingController _serverIpController = TextEditingController(text: '192.168.1.100:8080');
-  
+  final TextEditingController _hiddenInputController = TextEditingController();
+  final FocusNode _hiddenInputFocusNode = FocusNode();
+
   final RTCVideoRenderer _remoteRenderer = RTCVideoRenderer();
   RTCPeerConnection? _peerConnection;
   RTCDataChannel? _dataChannel;
@@ -46,6 +48,7 @@ class _RemoteScreenState extends State<RemoteScreen> {
   bool _isRendererReady = false;
   bool _isConnected = false;
   bool _isConnecting = false;
+  String _lastText = '';
 
   @override
   void initState() {
@@ -150,7 +153,6 @@ class _RemoteScreenState extends State<RemoteScreen> {
   }
 
   void _sendControlEvent(String type, Map<String, dynamic> data) {
-    // FIX TỆT ĐỐI LỖI ENUM CỦA FLUTTER WEBRTC
     if (_dataChannel != null && 
         (_dataChannel!.state == RTCDataChannelState.RTCDataChannelStateOpen ||
          _dataChannel!.state.toString().contains('Open'))) {
@@ -159,11 +161,38 @@ class _RemoteScreenState extends State<RemoteScreen> {
     }
   }
 
+  // Bắt từng sự kiện gõ chữ thời gian thực
+  void _onInputChanged(String currentText) {
+    if (currentText.length > _lastText.length) {
+      // Vừa gõ thêm ký tự mới -> Gửi ký tự đó sang server ngay
+      final newChar = currentText.substring(_lastText.length);
+      _sendControlEvent('type_text', {'text': newChar});
+    } else if (currentText.length < _lastText.length) {
+      // Vừa bấm nút Backspace (Xóa) -> Gửi sự kiện xóa sang server
+      final diff = _lastText.length - currentText.length;
+      for (int i = 0; i < diff; i++) {
+        _sendControlEvent('keydown', {'key': 'Backspace'});
+        _sendControlEvent('keyup', {'key': 'Backspace'});
+      }
+    }
+    _lastText = currentText;
+  }
+
+  // Bật/tắt bàn phím ảo của hệ thống
+  void _toggleKeyboard() {
+    if (_hiddenInputFocusNode.hasFocus) {
+      _hiddenInputFocusNode.unfocus();
+    } else {
+      FocusScope.of(context).requestFocus(_hiddenInputFocusNode);
+    }
+  }
+
   void _disconnect() {
     _remoteRenderer.srcObject = null;
     _dataChannel?.close();
     _peerConnection?.close();
     _peerConnection = null;
+    _hiddenInputFocusNode.unfocus();
     
     if (mounted) {
       setState(() {
@@ -186,6 +215,8 @@ class _RemoteScreenState extends State<RemoteScreen> {
     _dataChannel?.close();
     _peerConnection?.close();
     _serverIpController.dispose();
+    _hiddenInputController.dispose();
+    _hiddenInputFocusNode.dispose();
     super.dispose();
   }
 
@@ -194,6 +225,7 @@ class _RemoteScreenState extends State<RemoteScreen> {
     return Scaffold(
       body: Stack(
         children: [
+          // KHU VỰC STREAM VIDEO WEBRTC
           Positioned.fill(
             child: _isConnected && _isRendererReady
                 ? Listener(
@@ -219,6 +251,7 @@ class _RemoteScreenState extends State<RemoteScreen> {
                   ),
           ),
 
+          // OVERLAY ĐIỀU KHIỂN KHI CHƯA KẾT NỐI
           if (!_isConnected)
             Positioned(
               top: 40,
@@ -259,13 +292,48 @@ class _RemoteScreenState extends State<RemoteScreen> {
               ),
             ),
 
+          // THANH ĐIỀU KHIỂN ĐANG KẾT NỐI
           if (_isConnected)
             Positioned(
               top: 20,
               right: 20,
-              child: IconButton(
-                icon: const Icon(Icons.power_settings_new, color: Colors.red, size: 30),
-                onPressed: _disconnect,
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.keyboard, color: Colors.white, size: 28),
+                    style: IconButton.styleFrom(backgroundColor: Colors.black54),
+                    tooltip: 'Bật/Tắt bàn phím gõ trực tiếp',
+                    onPressed: _toggleKeyboard,
+                  ),
+                  const SizedBox(width: 12),
+                  IconButton(
+                    icon: const Icon(Icons.power_settings_new, color: Colors.red, size: 28),
+                    style: IconButton.styleFrom(backgroundColor: Colors.black54),
+                    onPressed: _disconnect,
+                  ),
+                ],
+              ),
+            ),
+
+          // Ô NHẬP LIỆU ẨN ĐỂ MỞ BÀN PHÍM HỆ THỐNG VA BẮT PHÍM REALTIME
+          if (_isConnected)
+            Positioned(
+              bottom: -100,
+              left: 0,
+              width: 1,
+              height: 1,
+              child: TextField(
+                controller: _hiddenInputController,
+                focusNode: _hiddenInputFocusNode,
+                autocorrect: false,
+                enableSuggestions: false,
+                keyboardType: TextInputType.multiline,
+                maxLines: null,
+                onChanged: _onInputChanged,
+                onSubmitted: (_) {
+                  _sendControlEvent('keydown', {'key': 'Enter'});
+                  _sendControlEvent('keyup', {'key': 'Enter'});
+                },
               ),
             ),
         ],
