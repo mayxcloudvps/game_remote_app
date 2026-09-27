@@ -53,7 +53,6 @@ class _RemoteScreenState extends State<RemoteScreen> {
     _initRenderer();
   }
 
-  // KHỞI TẠO RENDERER AN TOÀN TRÁNH CRASH NATIVE
   Future<void> _initRenderer() async {
     try {
       await _remoteRenderer.initialize();
@@ -78,7 +77,6 @@ class _RemoteScreenState extends State<RemoteScreen> {
     });
 
     try {
-      // 1. Cấu hình RTC PeerConnection
       Map<String, dynamic> configuration = {
         'iceServers': [
           {'urls': 'stun:stun.l.google.com:19302'},
@@ -94,7 +92,6 @@ class _RemoteScreenState extends State<RemoteScreen> {
 
       _peerConnection = await createPeerConnection(configuration, mediaConstraints);
 
-      // Lắng nghe Stream Video gửi về
       _peerConnection!.onTrack = (RTCTrackEvent event) {
         if (event.track.kind == 'video' && event.streams.isNotEmpty) {
           if (mounted) {
@@ -107,7 +104,6 @@ class _RemoteScreenState extends State<RemoteScreen> {
         }
       };
 
-      // Tự động giải phóng khi ngắt kết nối
       _peerConnection!.onIceConnectionState = (RTCIceConnectionState state) {
         if (state == RTCIceConnectionState.RTCIceConnectionStateDisconnected ||
             state == RTCIceConnectionState.RTCIceConnectionStateFailed) {
@@ -115,18 +111,15 @@ class _RemoteScreenState extends State<RemoteScreen> {
         }
       };
 
-      // 2. Tạo Data Channel cho Chuột & Bàn phím
       RTCDataChannelInit dataChannelDict = RTCDataChannelInit();
       _dataChannel = await _peerConnection!.createDataChannel('controlChannel', dataChannelDict);
 
-      // 3. Tạo SDP Offer
       RTCSessionDescription offer = await _peerConnection!.createOffer({
         'offerToReceiveVideo': 1,
         'offerToReceiveAudio': 1,
       });
       await _peerConnection!.setLocalDescription(offer);
 
-      // 4. Gửi Offer lên WebRTC Signaling Server
       final serverUrl = 'http://${_serverIpController.text.trim()}/offer';
       final response = await http.post(
         Uri.parse(serverUrl),
@@ -157,7 +150,8 @@ class _RemoteScreenState extends State<RemoteScreen> {
   }
 
   void _sendControlEvent(String type, Map<String, dynamic> data) {
-    if (_dataChannel != null && _dataChannel!.state == RTCDataChannelState.RTCDataChannelStateOpen) {
+    // FIX DÙNG RTCDataChannelState.open CHUẨN MỚI
+    if (_dataChannel != null && _dataChannel!.state == RTCDataChannelState.open) {
       final payload = jsonEncode({'type': type, 'data': data});
       _dataChannel!.send(RTCDataChannelMessage(payload));
     }
@@ -198,7 +192,6 @@ class _RemoteScreenState extends State<RemoteScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // KHU VỰC HIỂN THỊ STREAM VIDEO
           Positioned.fill(
             child: _isConnected && _isRendererReady
                 ? Listener(
@@ -224,7 +217,6 @@ class _RemoteScreenState extends State<RemoteScreen> {
                   ),
           ),
 
-          // OVERLAY ĐIỀU KHIỂN & ĐỊA CHỈ SERVER
           if (!_isConnected)
             Positioned(
               top: 40,
@@ -265,7 +257,6 @@ class _RemoteScreenState extends State<RemoteScreen> {
               ),
             ),
 
-          // NÚT NGẮT KẾT NỐI (KHI ĐANG STREAM)
           if (_isConnected)
             Positioned(
               top: 20,
