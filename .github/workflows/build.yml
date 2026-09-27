@@ -84,7 +84,7 @@ jobs:
   build-server-exe:
     name: Build Windows Server Setup
     runs-on: windows-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -124,12 +124,9 @@ jobs:
         run: |
           pyinstaller --noconfirm --onedir --windowed --icon=app_icon.ico --collect-data customtkinter --name "MayxServer" server.py
 
-      - name: Download & Install Inno Setup
-        shell: powershell
+      - name: Install Inno Setup via Choco
         run: |
-          [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-          Invoke-WebRequest -Uri "https://jrsoftware.org/download.php/is.exe" -OutFile "inno_installer.exe"
-          Start-Process -FilePath ".\inno_installer.exe" -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/SP-" -NoNewWindow -Wait
+          choco install innosetup --no-progress -y
 
       - name: Compile Installer with Inno Setup
         shell: powershell
