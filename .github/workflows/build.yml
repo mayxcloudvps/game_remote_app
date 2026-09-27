@@ -26,7 +26,7 @@ jobs:
         with:
           channel: 'stable'
 
-      # Cập nhật project Android lên V2 Embedding
+      # Dựng lại khung Android V2
       - name: Upgrade Android Project to V2 Embedding
         run: |
           rm -rf android
@@ -54,14 +54,19 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
-      - name: Build APK
-        run: flutter build apk --release --no-tree-shake-icons
+      # Cấp quyền và chạy Gradle trực tiếp để build APK Release
+      - name: Build APK with Gradle
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon
 
+      # Upload đúng đường dẫn APK do Gradle sinh ra
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: MayxCloudGaming-Android-Client
-          path: build/app/outputs/flutter-apk/*.apk
+          path: android/app/build/outputs/apk/release/*.apk
 
   # ==========================================
   # JOB 2: BUILD WINDOWS CLIENT (.EXE)
