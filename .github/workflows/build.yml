@@ -29,11 +29,17 @@ jobs:
       - name: Generate Android Platform Files
         run: flutter create --platforms=android --org com.mayx .
 
-      - name: Set SDK 35 in gradle.properties
+      - name: Patch Gradle Config for SDK 35 and Java 17
         run: |
-          echo "android.compileSdkVersion=35" >> android/gradle.properties
-          echo "android.targetSdkVersion=35" >> android/gradle.properties
-          echo "android.minSdkVersion=21" >> android/gradle.properties
+          # Sửa compileSdk và targetSdk trong android/app/build.gradle
+          sed -i 's/compileSdk = .*/compileSdk = 35/g' android/app/build.gradle || true
+          sed -i 's/compileSdkVersion .*/compileSdkVersion 35/g' android/app/build.gradle || true
+          sed -i 's/targetSdk = .*/targetSdk = 35/g' android/app/build.gradle || true
+          sed -i 's/targetSdkVersion .*/targetSdkVersion 35/g' android/app/build.gradle || true
+          
+          # Đảm bảo compileOptions dùng Java 17
+          sed -i 's/JavaVersion.VERSION_1_8/JavaVersion.VERSION_17/g' android/app/build.gradle || true
+          sed -i 's/JavaVersion.VERSION_11/JavaVersion.VERSION_17/g' android/app/build.gradle || true
 
       - name: Get dependencies
         run: flutter pub get
