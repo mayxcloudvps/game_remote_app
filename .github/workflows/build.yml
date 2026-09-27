@@ -79,7 +79,7 @@ jobs:
           path: MayxCloudGaming-Windows-Client.zip
 
   # ==========================================
-  # JOB 3: BUILD WINDOWS SERVER SETUP (.EXE)
+  # JOB 3: BUILD WINDOWS SERVER (.ZIP)
   # ==========================================
   build-server-exe:
     name: Build Windows Server Setup
@@ -120,21 +120,17 @@ jobs:
         run: |
           python -c "from PIL import Image; img = Image.open('app_icon.png'); img.save('app_icon.ico', format='ICO', sizes=[(256, 256)])"
 
-      - name: Build EXE Fast with PyInstaller
+      - name: Build EXE Ultra Fast with PyInstaller
         run: |
-          pyinstaller --noconfirm --onedir --windowed --icon=app_icon.ico --collect-data customtkinter --name "MayxServer" server.py
+          pyinstaller --noconfirm --onedir --windowed --icon=app_icon.ico --collect-data customtkinter --exclude-module matplotlib --exclude-module scipy --exclude-module tkinter --name "MayxServer" server.py
 
-      - name: Install Inno Setup via Choco
-        run: |
-          choco install innosetup --no-progress -y
-
-      - name: Compile Installer with Inno Setup
+      - name: Zip Server Output directly
         shell: powershell
         run: |
-          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" setup_script.iss
+          Compress-Archive -Path "dist\MayxServer\*" -DestinationPath "MayxCloudGaming-Windows-Server.zip" -Force
 
-      - name: Upload Windows Server Setup
+      - name: Upload Windows Server Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: MayxCloudGaming-Windows-Server-Setup
-          path: Output/MayxCloudGaming_Server_Setup.exe
+          name: MayxCloudGaming-Windows-Server
+          path: MayxCloudGaming-Windows-Server.zip
