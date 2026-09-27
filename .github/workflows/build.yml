@@ -26,6 +26,10 @@ jobs:
         with:
           channel: 'stable'
 
+      - name: Generate Android Config Files (Safe)
+        run: |
+          flutter create --platforms=android --org com.mayx.cloudgaming .
+
       - name: Get dependencies
         run: flutter pub get
 
@@ -52,8 +56,10 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Enable Windows Desktop
-        run: flutter config --enable-windows-desktop
+      - name: Enable Windows Desktop & Config
+        run: |
+          flutter config --enable-windows-desktop
+          flutter create --platforms=windows --org com.mayx.cloudgaming .
 
       - name: Get dependencies
         run: flutter pub get
